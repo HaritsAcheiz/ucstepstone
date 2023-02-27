@@ -79,7 +79,7 @@ def searchpage(driver, term):
                             break
                         except Exception as e:
                             print(e)
-                            driver.refresh()
+                            driver.get(driver.current_url)
 
                     company_urls.append(company_url)
                     driver.close()
