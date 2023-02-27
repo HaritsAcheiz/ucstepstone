@@ -43,7 +43,7 @@ def searchpage(driver, term):
     driver.maximize_window()
     driver.delete_all_cookies()
     driver.get(url)
-    wait = WebDriverWait(driver, 10)
+    wait = WebDriverWait(driver, 20)
 
     wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, 'input[data-at="searchbar-keyword-input"]'))).send_keys(term + Keys.RETURN)
     # job page
@@ -62,28 +62,32 @@ def searchpage(driver, term):
         mainwindow = driver.current_window_handle
         parent = driver.find_elements(By.CSS_SELECTOR, 'div[data-resultlist-offers-numbers] > div > article')
         for child in parent:
-            js_code = "arguments[0].scrollIntoView();"
-            element = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
-            driver.execute_script(js_code, element)
-            element.click()
-            time.sleep(5)
-            # go to company page
-            allwindow = driver.window_handles
-            for selwindow in allwindow:
-                # switch focus to child window
-                if (selwindow != mainwindow):
-                    driver.switch_to.window(selwindow)
-                    while 1:
+            try:
+                js_code = "arguments[0].scrollIntoView();"
+                element = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
+                driver.execute_script(js_code, element)
+                element.click()
+                time.sleep(5)
+
+                # go to company page
+                allwindow = driver.window_handles
+                for selwindow in allwindow:
+                    # switch focus to child window
+                    if (selwindow != mainwindow):
+                        driver.switch_to.window(selwindow)
+                        print(driver.page_source)
                         try:
                             company_url = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, 'a[data-at="header-company-name"]'))).get_attribute('href')
-                            break
                         except Exception as e:
                             print(e)
-                            driver.get(driver.current_url)
-
-                    company_urls.append(company_url)
-                    driver.close()
-                    driver.switch_to.window(mainwindow)
+                            # driver.get(driver.current_url)
+                            company_url = None
+                        company_urls.append(company_url)
+                        driver.close()
+                        driver.switch_to.window(mainwindow)
+            except Exception as e:
+                print(e)
+                continue
 
         # Change page
         try:
