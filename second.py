@@ -2,6 +2,8 @@ import time
 from dataclasses import dataclass, asdict
 import os
 import csv
+
+from selenium.webdriver import ActionChains
 from undetected_chromedriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
@@ -36,10 +38,17 @@ class StepStoneScraper:
 
     def webdriversetup(self, proxy, useragent):
         chrome_options = ChromeOptions()
-        # chrome_options.add_argument(f'--proxy-server={proxy}')
+        chrome_options.add_argument(f'--proxy-server={proxy}')
         # chrome_options.add_argument('-headless')
         chrome_options.add_argument(f"--user-agent={useragent}")
         chrome_options.add_argument('--no-sandbox')
+        # chrome_options.add_argument('--disable-popup-blocking')
+        # chrome_options.add_argument('--window-size=300,700')
+        # chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+        # chrome_options.add_argument('--no-first-run')
+        # chrome_options.add_argument('--no-service-autorun')
+        # chrome_options.add_argument('--password-store=0')
+        # chrome_options.add_argument('--incognito')
         chrome_options.page_load_strategy = "eager"
         driver = Chrome(options=chrome_options)
         return driver
@@ -64,8 +73,27 @@ class StepStoneScraper:
         print(useragent)
 
         driver = self.webdriversetup(proxy=next_proxy, useragent=useragent)
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 15)
         driver.get(page_url)
+
+        action = ActionChains(driver)
+        action.click_and_hold()
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 6)
+        action.move_by_offset(1, 8)
+        action.release()
+        action.perform()
+        action.reset_actions()
+
         parent = wait.until(
             ec.presence_of_all_elements_located((By.CSS_SELECTOR, 'div[data-resultlist-offers-numbers] > div > article')))
         for child in parent:
@@ -94,16 +122,35 @@ class StepStoneScraper:
                 continue
         print(useragent)
         term = term.replace(' ','-').lower()
-        page_url = f'https://www.stepstone.de/jobs/{term}?page=30'
+        page_url = f'https://www.stepstone.de/jobs/{term}?page=1'
         driver = self.webdriversetup(proxy=next_proxy, useragent=useragent)
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 15)
         driver.get(page_url)
+
+        action = ActionChains(driver)
+        action.click_and_hold()
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 1)
+        action.move_by_offset(1, 6)
+        action.move_by_offset(1, 8)
+        action.release()
+        action.perform()
+        action.reset_actions()
+
         parent = wait.until(ec.presence_of_all_elements_located((By.CSS_SELECTOR, 'div[data-resultlist-offers-numbers] > div > article')))
-        file_exists = os.path.isfile('job_urls.data')
+        file_exists = os.path.isfile('job_urls2.data')
         if not file_exists:
             job_urls = list()
         else:
-            with open('job_urls.data', 'r') as f:
+            with open('job_urls.data2', 'r') as f:
                 job_urls = json.load(f)
         for child in parent:
             try:
@@ -115,20 +162,20 @@ class StepStoneScraper:
             except Exception as e:
                 print(e)
                 continue
-        self.list_to_csv(job_urls, filename='job_urls.data')
+        self.list_to_csv(job_urls, filename='job_urls2.data')
         parent = wait.until(ec.presence_of_all_elements_located((By.CSS_SELECTOR, 'nav[aria-label="pagination"] > ul > li')))[-2]
         lastpage = int(parent.text)
-        print(f'Get job url from page 30 of {str(lastpage)}...')
+        print(f'Get job url from page 1 of {str(lastpage)}...')
         print(f'{len(job_urls)} job url(s) collected')
         driver.quit()
-        for page in range(31,lastpage):
+        for page in range(2,lastpage):
             print(f'Get job url from page {str(page)} of {str(lastpage)}...')
             page_url = f'https://www.stepstone.de/jobs/{term}?page={str(page)}'
             trials = 1
             while trials <= 3:
                 try:
                     job_urls = self.get_job_urls(page_url,job_urls=job_urls)
-                    self.list_to_csv(job_urls, filename='job_urls.data')
+                    self.list_to_csv(job_urls, filename='job_urls2.data')
                     print(f'{len(job_urls)} job url(s) collected')
                     trials = 0
                     break
@@ -136,22 +183,16 @@ class StepStoneScraper:
                     print(e)
                     if trials == 4:
                         print(f'failed to get job url(s) from page {str(page)}')
+                        driver.quit()
                     else:
                         trials += 1
+                        driver.quit()
         # csv_headers = ['name', 'website', 'linkedin']
 
 if __name__ == '__main__':
     proxies = [
-        '15.204.139.175:8800',
-       '15.204.138.215:8800',
-       '80.65.220.32:8800',
-       '80.65.221.91:8800',
-       '15.204.138.188:8800',
-       '15.204.139.7:8800',
-       '15.204.139.139:8800',
-       '15.204.139.10:8800',
-       '80.65.220.10:8800',
-       '80.65.221.196:8800'
+        '80.65.221.12:8800','80.65.220.172:8800','80.65.223.48:8800','80.65.220.133:8800','80.65.221.130:8800',
+        '80.65.222.66:8800','80.65.222.138:8800','80.65.223.125:8800','80.65.223.98:8800','80.65.223.188:8800'
     ]
     SSS = StepStoneScraper(proxies=proxies)
     SSS.main()
