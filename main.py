@@ -28,7 +28,6 @@ def to_csv(data, filename):
 
 def webdriversetup(proxy):
     chrome_options = ChromeOptions()
-    chrome_options.add_argument('-profile')
     # chrome_options.add_argument('-profile')
     # chrome_options.add_argument(f'--proxy-server={proxy}')
     # chrome_options.add_argument('-headless')
@@ -43,7 +42,7 @@ def searchpage(driver, term):
     driver.maximize_window()
     driver.delete_all_cookies()
     driver.get(url)
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 10)
 
     wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, 'input[data-at="searchbar-keyword-input"]'))).send_keys(term + Keys.RETURN)
     # job page
@@ -75,12 +74,16 @@ def searchpage(driver, term):
                     # switch focus to child window
                     if (selwindow != mainwindow):
                         driver.switch_to.window(selwindow)
-                        print(driver.page_source)
+                        # print(driver.page_source)
                         try:
                             company_url = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, 'a[data-at="header-company-name"]'))).get_attribute('href')
                         except Exception as e:
                             print(e)
-                            # driver.get(driver.current_url)
+                            time.sleep(120)
+                            # current_url = driver.current_url
+                            # driver.quit()
+                            # driver = webdriversetup()
+                            # driver.get(current_url)
                             company_url = None
                         company_urls.append(company_url)
                         driver.close()
@@ -102,9 +105,9 @@ def searchpage(driver, term):
     return company_urls
 
 def main():
-    proxies = ['192.126.250.22:8800', '154.12.198.69:8800', '192.126.253.48:8800', '154.12.198.179:8800',
-               '192.126.250.223:8800', '192.126.253.197:8800', '192.126.253.134:8800', '192.126.253.59:8800',
-               '154.38.30.117:8800', '154.38.30.196:8800']
+    proxies = ['15.204.139.175:8800','15.204.138.215:8800','80.65.220.32:8800','80.65.221.91:8800',
+               '15.204.138.188:8800','15.204.139.7:8800','15.204.139.139:8800','15.204.139.10:8800',
+               '80.65.220.10:8800','80.65.221.196:8800']
     term = input('Input job position:')
     proxy = choice(proxies)
     print(proxy)
