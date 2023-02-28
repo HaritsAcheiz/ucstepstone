@@ -50,9 +50,23 @@ def main():
     wait = WebDriverWait(driver, 10)
     driver.get(url)
     parent = wait.until(ec.presence_of_all_elements_located((By.CSS_SELECTOR, 'nav[aria-label="pagination"] > ul > li')))[-2]
-    lastpage = parent.find_element(By.CSS_SELECTOR,('a > span:nth-child(1) > span:nth-child(1) > span:nth-child(1)')).text()
+    lastpage = int(parent.text)
+    input('Script End')
     driver.quit()
-    print(lastpage)
+    for page in range(1,lastpage):
+        url = f'https://www.stepstone.de/jobs/{term}?page={page}'
+        if page % 5 == 0:
+            print('Change driver...')
+            proxy = choice(proxies)
+            print(proxy)
+            driver = webdriversetup(proxy=proxy)
+            wait = WebDriverWait(driver, 10)
+        else:
+            proxy = choice(proxies)
+            print(proxy)
+            driver = webdriversetup(proxy=proxy)
+            wait = WebDriverWait(driver, 10)
+
 
 if __name__ == '__main__':
     main()
