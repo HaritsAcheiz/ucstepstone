@@ -9,13 +9,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from random import choice
+from random import choice, shuffle, uniform
 import json
 from fake_useragent import UserAgent
+from typing import List
 
 @dataclass
 class StepStoneScraper:
-    proxies: list[str]
+    proxies: List[str]
+    useragents: List[str]
     company_name: str = None
     company_website: str = None
     company_linkedin: str = None
@@ -36,16 +38,21 @@ class StepStoneScraper:
         with open(filename, 'w') as f:
             json.dump(data, f)
 
+    def scrambled(self, orig):
+        dest = orig[:]
+        shuffle(dest)
+        return dest
+
     def webdriversetup(self, proxy, useragent):
         chrome_options = ChromeOptions()
-        # chrome_options.add_argument(f'--proxy-server={proxy}')
+        chrome_options.add_argument(f'--proxy-server={proxy}')
         # chrome_options.add_argument('-headless')
         chrome_options.add_argument(f"--user-agent={useragent}")
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-popup-blocking')
-        # chrome_options.add_argument('--window-size=300,700')
+        # chrome_options.add_argument('--no-sandbox')
+        # chrome_options.add_argument('--disable-popup-blocking')
+        # chrome_options.add_argument("start-maximized")
         chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-        chrome_options.add_argument('--no-first-run')
+        # chrome_options.add_argument('--no-first-run')
         # chrome_options.add_argument('--no-service-autorun')
         # chrome_options.add_argument('--password-store=0')
         # chrome_options.add_argument('--incognito')
@@ -53,10 +60,10 @@ class StepStoneScraper:
         driver = Chrome(options=chrome_options)
         return driver
 
-    def get_job_urls(self, page_url, job_urls):
+    def get_company_name(self, page_url, company_names):
         last_proxy = None
         next_proxy = choice(self.proxies)
-        ua = UserAgent(browsers=['chrome'])
+        # ua = UserAgent(browsers=['chrome'])
         while 1:
             if last_proxy == next_proxy:
                 next_proxy = choice(self.proxies)
@@ -64,12 +71,15 @@ class StepStoneScraper:
                 break
         print(next_proxy)
 
-        while 1:
-            useragent = ua.random
-            if 'Windows' in useragent:
-                break
-            else:
-                continue
+        # while 1:
+        #     useragent = ua.random
+        #     if 'Linux' in useragent:
+        #         break
+        #     else:
+        #         continue
+        # print(useragent)
+
+        useragent=choice(self.useragents)
         print(useragent)
 
         driver = self.webdriversetup(proxy=next_proxy, useragent=useragent)
@@ -92,7 +102,6 @@ class StepStoneScraper:
         action.move_by_offset(1, 8)
         action.release()
         action.perform()
-        time.sleep(5)
         action.reset_actions()
 
         parent = wait.until(
@@ -100,29 +109,37 @@ class StepStoneScraper:
         for child in parent:
             try:
                 js_code = "arguments[0].scrollIntoView();"
-                element = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
-                driver.execute_script(js_code, element)
-                job_url = element.get_attribute('href')
-                job_urls.append(job_url)
+                # job_link = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
+                cmp_name = child.find_element(By.CSS_SELECTOR, 'span[data-at="job-item-company-name"]')
+                driver.execute_script(js_code, cmp_name)
+                # job_url = job_link.get_attribute('href')
+                company_name = cmp_name.text
+                if company_name in company_names:
+                    pass
+                else:
+                    company_names.append(company_name)
             except Exception as e:
                 print(e)
                 continue
+            time.sleep(uniform(0.1, 1.0))
         driver.quit()
-        return job_urls
+        return company_names
 
     def initiate(self):
         next_proxy = choice(self.proxies)
         print(next_proxy)
-        ua = UserAgent(browsers=['chrome'])
-        while 1:
-            useragent = ua.random
-            if 'Windows' in useragent:
-                break
-            else:
-                continue
+        # ua = UserAgent(browsers=['chrome'])
+        # while 1:
+        #     useragent = ua.random
+        #     if 'Linux' in useragent:
+        #         break
+        #     else:
+        #         continue
+        # print(useragent)
+        useragent = choice(self.useragents)
         print(useragent)
         term = self.term.replace(' ', '-').lower()
-        page_url = f'https://www.stepstone.de/jobs/{term}?page=1'
+        page_url = f'https://www.stepstone.de/jobs/{term}?page=30'
         driver = self.webdriversetup(proxy=next_proxy, useragent=useragent)
         wait = WebDriverWait(driver, 15)
         driver.get(page_url)
@@ -143,53 +160,58 @@ class StepStoneScraper:
         action.move_by_offset(1, 8)
         action.release()
         action.perform()
-        time.sleep(5)
         action.reset_actions()
 
         parent = wait.until(ec.presence_of_all_elements_located(
             (By.CSS_SELECTOR, 'div[data-resultlist-offers-numbers] > div > article')))
         file_exists = os.path.isfile(f'{self.term}.data')
         if not file_exists:
-            job_urls = list()
+            company_names = list()
         else:
             with open(f'{self.term}.data', 'r') as f:
-                job_urls = json.load(f)
+                company_names = json.load(f)
         for child in parent:
             try:
                 js_code = "arguments[0].scrollIntoView();"
-                element = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
-                driver.execute_script(js_code, element)
-                job_url = element.get_attribute('href')
-                job_urls.append(job_url)
+                # job_link = child.find_element(By.CSS_SELECTOR, 'a[data-at="job-item-title"]')
+                cmp_name = child.find_element(By.CSS_SELECTOR, 'span[data-at="job-item-company-name"]')
+                driver.execute_script(js_code, cmp_name)
+                # job_url = job_link.get_attribute('href')
+                company_name = cmp_name.text
+                if company_name in company_names:
+                    pass
+                else:
+                    company_names.append(company_name)
             except Exception as e:
                 print(e)
                 continue
-        self.list_to_csv(job_urls, filename=f'{self.term}.data')
+            time.sleep(uniform(0.1, 1.0))
+        self.list_to_csv(company_names, filename=f'{self.term}.data')
         parent = wait.until(ec.presence_of_all_elements_located((By.CSS_SELECTOR, 'nav[aria-label="pagination"] > ul > li')))[-2]
         self.lastpage = int(parent.text)
-        print(f'Get job url from page 1 of {str(self.lastpage)}...')
-        print(f'{len(job_urls)} job url(s) collected')
+        print(f'Get company name from page 1 of {str(self.lastpage)}...')
+        print(f'{len(company_names)} company name(s) collected')
         driver.quit()
-        return job_urls
+        return company_names
 
     def main(self):
         self.term = input('Input job position:')
-        job_urls = self.initiate()
-        for page in range(2,self.lastpage):
-            print(f'Get job url from page {str(page)} of {str(self.lastpage)}...')
+        company_names = self.initiate()
+        for page in range(31,self.lastpage):
+            print(f'Get company name from page {str(page)} of {str(self.lastpage)}...')
             page_url = f'https://www.stepstone.de/jobs/{self.term}?page={str(page)}'
             trials = 1
             while trials <= 3:
                 try:
-                    job_urls = self.get_job_urls(page_url, job_urls=job_urls)
-                    self.list_to_csv(job_urls, filename=f'{self.term}.data')
-                    print(f'{len(job_urls)} job url(s) collected')
+                    company_names = self.get_company_name(page_url, company_names=company_names)
+                    self.list_to_csv(company_names, filename=f'{self.term}.data')
+                    print(f'{len(company_names)} company name (s) collected')
                     trials = 0
                     break
                 except Exception as e:
                     print(e)
-                    if trials == 4:
-                        print(f'failed to get job url(s) from page {str(page)}')
+                    if trials == 3:
+                        print(f'failed to get company name(s) from page {str(page)}')
                         # driver.quit()
                     else:
                         trials += 1
@@ -198,8 +220,16 @@ class StepStoneScraper:
 
 if __name__ == '__main__':
     proxies = [
-        '80.65.221.12:8800','80.65.220.172:8800','80.65.223.48:8800','80.65.220.133:8800','80.65.221.130:8800',
-        '80.65.222.66:8800','80.65.222.138:8800','80.65.223.125:8800','80.65.223.98:8800','80.65.223.188:8800'
+        '80.65.221.12:8800', '80.65.220.172:8800', '80.65.223.48:8800', '80.65.220.133:8800', '80.65.221.130:8800',
+        '80.65.222.66:8800', '80.65.222.138:8800', '80.65.223.125:8800', '80.65.223.98:8800', '80.65.223.188:8800'
     ]
-    SSS = StepStoneScraper(proxies=proxies)
+
+    useragents =[
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5503.200 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/110.0.5481.100 Safari/537.36',
+        'Mozilla/5.0 (Linux x86_64; en-US) AppleWebKit/537.45 (KHTML, like Gecko) Chrome/113.0.5503.200 Safari/534',
+        'Mozilla/5.0 (U; Linux x86_64; en-US) AppleWebKit/602.18 (KHTML, like Gecko) HeadlessChrome/110.0.5481.100 Safari/600'
+    ]
+
+    SSS = StepStoneScraper(proxies=proxies, useragents=useragents)
     SSS.main()
