@@ -2,37 +2,42 @@ import time
 from dataclasses import dataclass, asdict
 import os
 import csv
-
+import re
 from selenium.webdriver import ActionChains
 from undetected_chromedriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.common.keys import Keys
 from random import choice, shuffle, uniform
 import json
-from fake_useragent import UserAgent
 from typing import List
+import requests
+from selectolax.parser import HTMLParser
+
+
+@dataclass
+class Company:
+    name: str
+    website: str
+    linkedin: str
 
 @dataclass
 class StepStoneScraper:
     proxies: List[str]
     useragents: List[str]
-    company_name: str = None
-    company_website: str = None
-    company_linkedin: str = None
     term = str
     last_page = str
 
 
-    def to_csv(self, data, filename, headers):
+    def to_csv(self, data, filename):
         file_exists = os.path.isfile(filename)
 
-        with open(filename, 'w', encoding='utf-16') as f:
+        with open(filename, 'a', encoding='utf-16') as f:
+            headers = ['name', 'website', 'linkedin']
             writer = csv.DictWriter(f, delimiter=',', lineterminator='\n', fieldnames=headers)
             if not file_exists:
                 writer.writeheader()
-            writer.writerows(data)
+            writer.writerow(data)
 
     def list_to_csv(self, data, filename):
         with open(filename, 'w') as f:
@@ -194,9 +199,7 @@ class StepStoneScraper:
         driver.quit()
         return company_names
 
-    def main(self):
-        self.term = input('Input job position:')
-        company_names = self.initiate()
+    def pagination(self, company_names):
         for page in range(31,self.lastpage):
             print(f'Get company name from page {str(page)} of {str(self.lastpage)}...')
             page_url = f'https://www.stepstone.de/jobs/{self.term}?page={str(page)}'
@@ -216,7 +219,54 @@ class StepStoneScraper:
                     else:
                         trials += 1
                         # driver.quit()
-        # csv_headers = ['name', 'website', 'linkedin']
+
+    def read_company_name(self):
+        with open(f'{self.term}.data', 'r') as f:
+            company_list = json.load(f)
+        return company_list
+
+    def get_company_url(self, company_list):
+        print("Searching for company url...")
+        last_proxy = None
+        current_proxy = None
+        while last_proxy == current_proxy:
+            current_proxy = choice(self.proxies)
+
+        formated_proxies = {
+            "http": f"http://{current_proxy}",
+            "https": f"http://{current_proxy}"
+        }
+
+        header = {
+            "user-agent": choice(self.useragents)
+        }
+        count = 0
+        for company_name in company_list:
+            print(f"Searching for {company_name} url...")
+            linkedin_url = f"https://html.duckduckgo.com/html/?q={re.sub('[^A-Za-z0-9]+', '+', company_name)}+linkedin"
+            web_url = f"https://html.duckduckgo.com/html/?q={re.sub('[^A-Za-z0-9]+', '+', company_name)}"
+            with requests.Session() as client:
+                response = client.get(web_url, headers=header, proxies=formated_proxies, timeout=(5, 27))
+            tree = HTMLParser(response.text)
+            company_website = tree.css_first(
+                "div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
+            with requests.Session() as client:
+                response = client.get(linkedin_url, headers=header, proxies=formated_proxies, timeout=(5, 27))
+            tree = HTMLParser(response.text)
+            company_linkedin = tree.css_first(
+                "div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
+            new_item = asdict(Company(name=company_name, website=company_website, linkedin=company_linkedin))
+            self.to_csv(new_item, f'{self.term}.csv')
+            print(f"{company_name} url collected")
+            count += 1
+        print(f"{count} company data(s) collected")
+
+    def main(self):
+        self.term = input('Input job position:')
+        # company_names = self.initiate()
+        # self.pagination(company_names)
+        company_lists = self.read_company_name()
+        self.get_company_url(company_lists)
 
 if __name__ == '__main__':
     proxies = [
