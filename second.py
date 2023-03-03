@@ -51,7 +51,7 @@ class StepStoneScraper:
     def webdriversetup(self, proxy, useragent):
         chrome_options = ChromeOptions()
         chrome_options.add_argument(f'--proxy-server={proxy}')
-        # chrome_options.add_argument('-headless')
+        chrome_options.add_argument('-headless')
         chrome_options.add_argument(f"--user-agent={useragent}")
         # chrome_options.add_argument('--no-sandbox')
         # chrome_options.add_argument('--disable-popup-blocking')
@@ -144,7 +144,7 @@ class StepStoneScraper:
         useragent = choice(self.useragents)
         print(useragent)
         term = self.term.replace(' ', '-').lower()
-        page_url = f'https://www.stepstone.de/jobs/{term}?page=30'
+        page_url = f'https://www.stepstone.de/jobs/{term}?page=1'
         driver = self.webdriversetup(proxy=next_proxy, useragent=useragent)
         wait = WebDriverWait(driver, 15)
         driver.get(page_url)
@@ -199,8 +199,9 @@ class StepStoneScraper:
         driver.quit()
         return company_names
 
-    def pagination(self, company_names):
-        for page in range(31,self.lastpage):
+    def paginationbelowlimit(self, company_names):
+        # for page in range(2,30):
+        for page in range(2, self.lastpage):
             print(f'Get company name from page {str(page)} of {str(self.lastpage)}...')
             page_url = f'https://www.stepstone.de/jobs/{self.term}?page={str(page)}'
             trials = 1
@@ -219,6 +220,26 @@ class StepStoneScraper:
                     else:
                         trials += 1
                         # driver.quit()
+
+    def paginationoverlimit(self, company_names):
+        for page in range(2,30):
+            print(f'Get company name from page {str(page)} of {str(self.lastpage)}...')
+            page_url = f'https://www.stepstone.de/jobs/{self.term}?page={str(page)}'
+            trials = 1
+            while trials <= 3:
+                try:
+                    company_names = self.get_company_name(page_url, company_names=company_names)
+                    self.list_to_csv(company_names, filename=f'{self.term}.data')
+                    print(f'{len(company_names)} company name (s) collected')
+                    trials = 0
+                    break
+                except Exception as e:
+                    print(e)
+                    if trials == 3:
+                        print(f'failed to get company name(s) from page {str(page)}')
+                        # driver.quit()
+                    else:
+                        trials += 1
 
     def read_company_name(self):
         with open(f'{self.term}.data', 'r') as f:
@@ -247,14 +268,17 @@ class StepStoneScraper:
             web_url = f"https://html.duckduckgo.com/html/?q={re.sub('[^A-Za-z0-9]+', '+', company_name)}"
             with requests.Session() as client:
                 response = client.get(web_url, headers=header, proxies=formated_proxies, timeout=(5, 27))
+            print(response)
+            print(response.text)
             tree = HTMLParser(response.text)
-            company_website = tree.css_first(
-                "div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
+            company_website = tree.css_first("div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
             with requests.Session() as client:
                 response = client.get(linkedin_url, headers=header, proxies=formated_proxies, timeout=(5, 27))
+            print(response)
+            print(response.text)
             tree = HTMLParser(response.text)
-            company_linkedin = tree.css_first(
-                "div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
+            company_linkedin = tree.css_first("div.serp__results > div#links.results > div.result.results_links.results_links_deep.web-result > div.links_main.links_deep.result__body > div.result__extras > div.result__extras__url > a.result__url").text().strip()
+
             new_item = asdict(Company(name=company_name, website=company_website, linkedin=company_linkedin))
             self.to_csv(new_item, f'{self.term}.csv')
             print(f"{company_name} url collected")
@@ -263,8 +287,11 @@ class StepStoneScraper:
 
     def main(self):
         self.term = input('Input job position:')
-        # company_names = self.initiate()
-        # self.pagination(company_names)
+        company_names = self.initiate()
+        if self.lastpage > 30:
+            self.paginationoverlimit(company_names)
+        else:
+            self.paginationbelowlimit(company_names)
         company_lists = self.read_company_name()
         self.get_company_url(company_lists)
 
