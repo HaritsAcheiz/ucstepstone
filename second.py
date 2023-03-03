@@ -305,7 +305,16 @@ if __name__ == '__main__':
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5503.200 Safari/537.36',
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/110.0.5481.100 Safari/537.36',
         'Mozilla/5.0 (Linux x86_64; en-US) AppleWebKit/537.45 (KHTML, like Gecko) Chrome/113.0.5503.200 Safari/534',
-        'Mozilla/5.0 (U; Linux x86_64; en-US) AppleWebKit/602.18 (KHTML, like Gecko) HeadlessChrome/110.0.5481.100 Safari/600'
+        'Mozilla/5.0 (U; Linux x86_64; en-US) AppleWebKit/602.18 (KHTML, like Gecko) HeadlessChrome/110.0.5481.100 Safari/600',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.48-1) Vivaldi/5.0.2497.48',
+        'Mozilla/5.0 (Wayland; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.137 Safari/537.36 Ubuntu/22.04 (5.0.2497.35-1) Vivaldi/5.0.2497.35',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76 Galago Pro (galp2)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.175 Safari/537.36 Ubuntu/22.04 (5.0.2497.51-1) Vivaldi/5.0.2497.51',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.133 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.39',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.92 Safari/537.36 Ubuntu/22.04 (5.2.2623.34-1) Vivaldi/5.2.2623.34',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.83 Safari/537.36 Ubuntu/22.04 (5.4.2753.33-1) Vivaldi/5.4.2753.33',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.121 Safari/537.36 Ubuntu/22.04 (5.1.2567.57-1) Vivaldi/5.1.2567.57',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.126 Safari/537.36 Ubuntu/22.04 (5.4.2753.51-1) Vivaldi/5.4.2753.51',
+        'Mozilla/5.0 (Wayland; Linux x86_64; System76) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.126 Safari/537.36 Ubuntu/22.04.1 (5.4.2753.51-1) Vivaldi/5.4.2753.51'
     ]
 
     SSS = StepStoneScraper(proxies=proxies, useragents=useragents)
